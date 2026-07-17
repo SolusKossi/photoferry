@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Video triage</title>
+<style>
+  :root {
+    --ground:#f4f2ef; --card:#ffffff; --ink:#171721; --ink-60:rgba(23,23,33,.6);
+    --slate:#50617a; --line:#ededf3; --lime:#e0f050; --lime-ink:#171721;
+    --brick:#c0452c; --brick-soft:#f7e8e4; --lime-soft:#f4f8d8;
+    --dark:#171721; --dark-text:#ededf3;
+    --r-s:4px; --r-m:8px; --r-l:12px;
+    --shadow:rgba(50,50,93,.25) 0 30px 45px -30px;
+    --shadow-s:rgba(0,0,0,.1) 0 18px 36px -18px;
+  }
+  * { box-sizing:border-box; margin:0; }
+  html { scrollbar-color:#c9c6bf var(--ground); scrollbar-width:thin; }
+  ::-webkit-scrollbar { width:10px; } ::-webkit-scrollbar-track { background:var(--ground); }
+  ::-webkit-scrollbar-thumb { background:#c9c6bf; border-radius:5px; border:2px solid var(--ground); }
+  ::selection { background:var(--lime); color:var(--lime-ink); }
+  body { font-family:'Söhne','Inter','Segoe UI',system-ui,sans-serif; background:var(--ground); color:var(--ink); font-size:16px; line-height:1.5; }
+  a { color:var(--ink); }
+  header { padding:40px 48px 8px; }
+  h1 { font-size:40px; font-weight:600; letter-spacing:-.03em; line-height:1.1; }
+  .sub { color:var(--ink-60); font-size:16px; margin-top:8px; max-width:52ch; }
+  .statrow { display:flex; gap:32px; padding:24px 48px 8px; flex-wrap:wrap; }
+  .stat .lbl { font-size:10px; text-transform:uppercase; letter-spacing:.12em; color:var(--slate); }
+  .stat .val { font-size:24px; font-weight:600; letter-spacing:-.02em; }
+  .stat .val em { font-style:normal; font-size:14px; color:var(--ink-60); font-weight:400; }
+  .toolbar { padding:16px 48px 24px; display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+  button { font:inherit; font-size:14px; font-weight:500; cursor:pointer; border:1px solid var(--line); background:var(--card); color:var(--ink); border-radius:var(--r-m); padding:8px 16px; transition:border-color .12s, background .12s; }
+  button:hover { border-color:var(--slate); }
+  button:focus-visible { outline:2px solid var(--lime); outline-offset:1px; }
+  button.primary { background:var(--ink); border-color:var(--ink); color:#fff; }
+  button.primary:hover { background:#000; }
+  .seg { display:flex; border:1px solid var(--line); border-radius:var(--r-m); overflow:hidden; margin-left:auto; }
+  .seg button { border:none; border-radius:0; background:var(--card); color:var(--ink-60); }
+  .seg button.active { background:var(--ink); color:#fff; }
+  .note { color:var(--ink-60); font-size:14px; padding:0 48px 24px; max-width:74ch; }
+  .note b { color:var(--ink); font-weight:600; }
+  .note code { background:var(--card); border:1px solid var(--line); border-radius:var(--r-s); padding:1px 6px; font-size:12.5px; }
+  main { padding:0 48px 80px; }
+  .board { background:var(--card); border-radius:var(--r-l); box-shadow:var(--shadow); overflow:hidden; }
+  table { width:100%; border-collapse:collapse; }
+  th { text-align:left; font-size:10px; text-transform:uppercase; letter-spacing:.12em; color:var(--slate); font-weight:600; padding:16px 20px 12px; border-bottom:1px solid var(--line); }
+  td { padding:12px 20px; font-size:14px; border-bottom:1px solid var(--line); }
+  tr:last-child td { border-bottom:none; }
+  tr.vkeep { background:var(--lime-soft); }
+  tr.vdelete { background:var(--brick-soft); }
+  .fname { font-weight:500; cursor:pointer; text-decoration:underline; text-decoration-color:var(--line); text-underline-offset:3px; }
+  .fname:hover { text-decoration-color:var(--ink); }
+  .fname.dead { color:var(--ink-60); cursor:default; text-decoration:none; }
+  .tag { display:inline-block; border-radius:var(--r-s); padding:2px 8px; font-size:12px; font-weight:500; }
+  .tag.on { background:var(--lime); color:var(--lime-ink); }
+  .tag.off { background:var(--line); color:var(--slate); }
+  .vbtns { display:flex; gap:6px; }
+  .vbtns button { padding:5px 12px; font-size:13px; border-radius:var(--r-s); }
+  .vb-keep.on { background:var(--lime); border-color:var(--lime); color:var(--lime-ink); font-weight:600; }
+  .vb-del.on { background:var(--brick); border-color:var(--brick); color:#fff; font-weight:600; }
+  /* review mode - the one dark surface */
+  #review { position:fixed; inset:0; background:var(--dark); z-index:100; display:none; flex-direction:column; }
+  #review.open { display:flex; }
+  #rv-head { display:flex; align-items:baseline; gap:20px; padding:20px 32px 12px; color:var(--dark-text); }
+  #rv-meta { font-size:14px; }
+  #rv-verdict { font-size:10px; text-transform:uppercase; letter-spacing:.12em; }
+  #rv-verdict.k { color:var(--lime); } #rv-verdict.d { color:#f0907a; }
+  #rv-prog { margin-left:auto; font-size:12px; color:rgba(237,237,243,.55); }
+  #rv-stage { flex:1; display:flex; align-items:center; justify-content:center; min-height:0; padding:0 32px; }
+  #rv-video { max-width:100%; max-height:100%; border-radius:var(--r-l); background:#000; }
+  #rv-card { color:rgba(237,237,243,.75); text-align:center; font-size:16px; max-width:56ch; line-height:1.7; }
+  #rv-card code { background:rgba(237,237,243,.1); border-radius:var(--r-s); padding:2px 8px; font-size:13px; }
+  #rv-controls { display:flex; gap:10px; justify-content:center; padding:20px 32px 12px; }
+  #rv-controls button { border:none; border-radius:var(--r-m); padding:12px 28px; font-size:15px; font-weight:600; }
+  .rv-keep { background:var(--lime); color:var(--lime-ink); }
+  .rv-keep:hover { background:#e8f76a; }
+  .rv-del { background:var(--brick); color:#fff; }
+  .rv-del:hover { background:#d0533a; }
+  .rv-skip, .rv-nav { background:rgba(237,237,243,.12); color:var(--dark-text); font-weight:500; }
+  .rv-skip:hover, .rv-nav:hover { background:rgba(237,237,243,.2); }
+  .rv-exit { position:absolute; top:18px; right:24px; background:none; border:1px solid rgba(237,237,243,.25); color:var(--dark-text); border-radius:var(--r-m); }
+  .kbd-hint { text-align:center; color:rgba(237,237,243,.4); font-size:12px; padding-bottom:18px; }
+  kbd { background:rgba(237,237,243,.12); border-radius:var(--r-s); padding:1px 6px; font-family:inherit; }
+  #io { padding:0 48px 40px; display:none; }
+  #io.open { display:block; }
+  #io textarea { width:100%; height:120px; border-radius:var(--r-m); border:1px solid var(--line); padding:12px; font-family:'Source Code Pro',monospace; font-size:12px; background:var(--card); color:var(--ink); }
+  #io textarea:focus-visible { outline:2px solid var(--lime); outline-offset:1px; }
+  #io textarea::placeholder { color:var(--slate); }
+</style>
+</head>
+<body>
+<header>
+  <h1>Video triage</h1>
+  <div class="sub">Your <span id="h-count">100</span> largest videos. Decide what stays in iCloud — nothing is deleted here, decisions are recorded for review.</div>
+</header>
+<div class="statrow">
+  <div class="stat"><div class="lbl">Undecided</div><div class="val" id="s-und">–</div></div>
+  <div class="stat"><div class="lbl">Keep</div><div class="val" id="s-keep">–</div></div>
+  <div class="stat"><div class="lbl">Delete</div><div class="val" id="s-del">–</div></div>
+  <div class="stat"><div class="lbl">Space freed</div><div class="val"><span id="s-delgb">0</span> <em>GB</em></div></div>
+  <div class="stat"><div class="lbl">Watchable now</div><div class="val" id="s-play">–</div></div>
+</div>
+<div class="toolbar">
+  <button class="primary" onclick="startReview()">Start review</button>
+  <button onclick="exportVerdicts()">Export decisions</button>
+  <button onclick="document.getElementById('io').classList.toggle('open')">Import</button>
+  <div class="seg">
+    <button class="active" data-f="all" onclick="setFilter('all',this)">All</button>
+    <button data-f="und" onclick="setFilter('und',this)">Undecided</button>
+    <button data-f="keep" onclick="setFilter('keep',this)">Keep</button>
+    <button data-f="delete" onclick="setFilter('delete',this)">Delete</button>
+    <button data-f="play" onclick="setFilter('play',this)">Watchable</button>
+  </div>
+</div>
+<div class="note">Decisions save in this browser as you go. When done, <b>Export decisions</b> — drop the file in <code>H:\PhotoTransfer_work\</code> or paste the text to Claude. Generated <span id="gen-ts"></span>.</div>
+<div id="io"><textarea id="io-text" placeholder="Exported JSON appears here. Paste JSON and import to restore."></textarea>
+<div style="padding-top:8px"><button onclick="importVerdicts()">Import from text</button></div></div>
+<main><div class="board"><table id="tbl"><thead><tr><th>File</th><th>Date</th><th>Size</th><th>Status</th><th>Verdict</th></tr></thead><tbody></tbody></table></div></main>
+
+<div id="review">
+  <button class="rv-exit" onclick="exitReview()">Close</button>
+  <div id="rv-head"><div id="rv-meta"></div><div id="rv-verdict"></div><div id="rv-prog"></div></div>
+  <div id="rv-stage"></div>
+  <div id="rv-controls">
+    <button class="rv-nav" onclick="nav(-1)">Previous</button>
+    <button class="rv-keep" onclick="decide('keep')">Keep</button>
+    <button class="rv-del" onclick="decide('delete')">Delete</button>
+    <button class="rv-skip" onclick="nav(1)">Skip</button>
+  </div>
+  <div class="kbd-hint"><kbd>↑</kbd> keep · <kbd>↓</kbd> delete · <kbd>←</kbd> <kbd>→</kbd> seek · <kbd>space</kbd> pause · <kbd>n</kbd>/<kbd>p</kbd> next/prev · <kbd>esc</kbd> close</div>
+</div>
+
+<script>
+const DATA = /*__DATA__*/[];
+const GEN = /*__GEN__*/"";
+const LSKEY = "slopscrub-video-verdicts";
+let verdicts = JSON.parse(localStorage.getItem(LSKEY) || "{}");
+let filter = "all";
+let rvIndex = -1;
+
+function save() { localStorage.setItem(LSKEY, JSON.stringify(verdicts)); render(); }
+function vOf(f) { return verdicts[f.filename] || ""; }
+
+function render() {
+  const tb = document.querySelector("#tbl tbody"); tb.innerHTML = "";
+  let und=0, keep=0, del=0, delgb=0, play=0;
+  DATA.forEach((f,i) => {
+    const v = vOf(f);
+    if (v==="keep") keep++; else if (v==="delete") { del++; delgb+=f.gb; } else und++;
+    if (f.playable) play++;
+    if (filter==="und" && v) return; if (filter==="keep" && v!=="keep") return;
+    if (filter==="delete" && v!=="delete") return; if (filter==="play" && !f.playable) return;
+    const tr = document.createElement("tr");
+    tr.className = v ? "v"+v : "";
+    tr.innerHTML = `<td><span class="fname ${f.playable?"":"dead"}" onclick="${f.playable?`openReviewAt(${i})`:""}">${f.filename}</span></td>
+      <td>${f.date}</td><td>${f.gb.toFixed(2)} GB</td>
+      <td><span class="tag ${f.playable?"on":"off"}">${f.playable?"On NAS":"Transferring"}</span></td>
+      <td><div class="vbtns">
+        <button class="vb-keep ${v==="keep"?"on":""}" onclick="setV('${f.filename}','keep')">Keep</button>
+        <button class="vb-del ${v==="delete"?"on":""}" onclick="setV('${f.filename}','delete')">Delete</button>
+        <button onclick="setV('${f.filename}','')">Clear</button>
+      </div></td>`;
+    tb.appendChild(tr);
+  });
+  document.getElementById("s-und").textContent = und;
+  document.getElementById("s-keep").textContent = keep;
+  document.getElementById("s-del").textContent = del;
+  document.getElementById("s-delgb").textContent = delgb.toFixed(0);
+  document.getElementById("s-play").textContent = play + " of " + DATA.length;
+  document.getElementById("h-count").textContent = DATA.length;
+  document.getElementById("gen-ts").textContent = GEN;
+}
+function setV(name, v) { if (v) verdicts[name]=v; else delete verdicts[name]; save(); }
+function setFilter(f, btn) { filter=f; document.querySelectorAll(".seg button").forEach(b=>b.classList.remove("active")); btn.classList.add("active"); render(); }
+
+function exportVerdicts() {
+  const out = { exported: new Date().toISOString(), source: "video-triage", verdicts };
+  const txt = JSON.stringify(out, null, 2);
+  document.getElementById("io").classList.add("open");
+  document.getElementById("io-text").value = txt;
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([txt], {type:"application/json"}));
+  a.download = "video_verdicts.json"; a.click();
+}
+function importVerdicts() {
+  try { const o = JSON.parse(document.getElementById("io-text").value); verdicts = o.verdicts || o; save(); alert("Imported " + Object.keys(verdicts).length + " decisions."); }
+  catch(e) { alert("Could not parse JSON: " + e.message); }
+}
+
+function playableIdx() { return DATA.map((f,i)=>f.playable?i:-1).filter(i=>i>=0); }
+function startReview() {
+  const p = playableIdx();
+  if (!p.length) { alert("Nothing is watchable yet — videos are still transferring to the NAS."); return; }
+  const firstUnd = p.find(i => !vOf(DATA[i]));
+  openReviewAt(firstUnd !== undefined ? firstUnd : p[0]);
+}
+function openReviewAt(i) {
+  rvIndex = i; document.getElementById("review").classList.add("open"); showCurrent();
+  if (document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().catch(()=>{});
+}
+function exitReview() {
+  document.getElementById("review").classList.remove("open");
+  document.getElementById("rv-stage").innerHTML = "";
+  if (document.fullscreenElement) document.exitFullscreen().catch(()=>{});
+  render();
+}
+function showCurrent() {
+  const f = DATA[rvIndex]; const st = document.getElementById("rv-stage"); st.innerHTML = "";
+  const v = vOf(f);
+  document.getElementById("rv-meta").textContent = `${f.filename} · ${f.date} · ${f.gb.toFixed(2)} GB`;
+  const vd = document.getElementById("rv-verdict");
+  vd.textContent = v ? "Marked " + v : ""; vd.className = v==="keep" ? "k" : v==="delete" ? "d" : "";
+  document.getElementById("rv-prog").textContent = `${Object.keys(verdicts).length} of ${DATA.length} decided`;
+  if (!f.playable) {
+    st.innerHTML = `<div id="rv-card">${f.filename} is still transferring — skip for now, it becomes watchable on a later visit.</div>`;
+    return;
+  }
+  const vid = document.createElement("video");
+  vid.id = "rv-video"; vid.controls = true; vid.autoplay = true;
+  vid.src = encodeURIComponent(f.filename);
+  vid.onerror = () => { st.innerHTML = `<div id="rv-card">This browser can't decode the video (likely HEVC).<br>Open it directly, then decide below.<br><code>\\\\192.168.50.144\\home\\Photos\\ios\\icloud-originals\\${f.filename}</code></div>`; };
+  st.appendChild(vid);
+}
+function decide(v) { verdicts[DATA[rvIndex].filename] = v; save(); nav(1, true); }
+function nav(dir, preferUndecided) {
+  let i = rvIndex;
+  for (let step=0; step<DATA.length; step++) {
+    i = (i + dir + DATA.length) % DATA.length;
+    if (preferUndecided && vOf(DATA[i])) continue;
+    break;
+  }
+  rvIndex = i; showCurrent();
+}
+document.addEventListener("keydown", e => {
+  if (!document.getElementById("review").classList.contains("open")) return;
+  const vid = document.getElementById("rv-video");
+  switch (e.key) {
+    case "Escape": exitReview(); break;
+    case "ArrowUp": e.preventDefault(); decide("keep"); break;
+    case "ArrowDown": e.preventDefault(); decide("delete"); break;
+    case "ArrowRight": if (vid) { e.preventDefault(); vid.currentTime += 10; } break;
+    case "ArrowLeft": if (vid) { e.preventDefault(); vid.currentTime -= 10; } break;
+    case " ": if (vid) { e.preventDefault(); vid.paused ? vid.play() : vid.pause(); } break;
+    case "n": case "N": nav(1, true); break;
+    case "p": case "P": nav(-1); break;
+  }
+});
+render();
+</script>
+</body>
+</html>

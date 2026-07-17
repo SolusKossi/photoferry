@@ -1,0 +1,10 @@
+{
+  "source": "C:\\Users\\you\\Pictures\\iCloud Photos\\Photos",
+  "destination": "\\\\your-nas\\share\\photos\\icloud-originals",
+  "workdir": "C:\\PhotoRescue_work",
+
+  "batch_gb": 25,
+  "batch_files": 750,
+  "min_free_gb": 60,
+  "hash_workers": 1
+}

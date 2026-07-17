@@ -1,0 +1,4 @@
+config.json
+*_work/
+*.log
+video_verdicts.json
