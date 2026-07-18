@@ -1,8 +1,8 @@
-# PhotoRescue
+# PhotoFerry
 
 **Get your photos out of iCloud — verified, byte for byte.**
 
-PhotoRescue migrates an iCloud Photos library from the iCloud for Windows sync
+PhotoFerry migrates an iCloud Photos library from the iCloud for Windows sync
 folder to any destination you control (NAS, external disk, second volume), with
 a SHA-256 manifest proving every single file arrived intact. It was built during
 a real 366 GB / 10,600-file exodus that survived four days of Apple's
@@ -23,7 +23,7 @@ Copying this folder with Explorer, robocopy, or rsync either fails, falsely
 "succeeds" with placeholder stubs, or gets your account throttled into the
 ground.
 
-PhotoRescue handles all of it:
+PhotoFerry handles all of it:
 
 - **Chunked hydration** — reads placeholders in 4 MB ranges, sidestepping the
   60-second full-file recall timeout that kills large videos.

@@ -1,7 +1,7 @@
-{
+﻿{
   "source": "C:\\Users\\you\\Pictures\\iCloud Photos\\Photos",
   "destination": "\\\\your-nas\\share\\photos\\icloud-originals",
-  "workdir": "C:\\PhotoRescue_work",
+  "workdir": "C:\\PhotoFerry_work",
 
   "batch_gb": 25,
   "batch_files": 750,

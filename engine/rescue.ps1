@@ -1,4 +1,4 @@
-# PhotoRescue engine: batch -> chunked-read hash (hydrates via ranges) -> copy -> verify -> dehydrate.
+﻿# PhotoFerry engine: batch -> chunked-read hash (hydrates via ranges) -> copy -> verify -> dehydrate.
 # Verified migration out of an iCloud for Windows sync folder. See docs/apple-rate-limiter-field-notes.md
 # for why every design choice here exists (chunked reads, gentle single stream, benching, cooldowns).
 # COPY-ONLY by design: the tool never deletes user data at source or destination.
