@@ -1,4 +1,4 @@
-# Manifest specification — v1 (draft)
+# Manifest specification  -  v1 (draft)
 
 The manifest is a UTF-8 CSV, one row per source file, that serves as the
 migration's complete state: progress tracker, resume point, verification
@@ -21,13 +21,13 @@ tool is just the thing that fills it in.
 
 ## Status semantics
 
-- `verified` — destination hash matched source hash. Terminal. Rows are never
+- `verified`  -  destination hash matched source hash. Terminal. Rows are never
   demoted; a re-run skips them.
-- `pending` — enumerated but not yet processed (or re-queued for retry).
-- `failed_hydration` — the cloud provider would not produce the bytes
+- `pending`  -  enumerated but not yet processed (or re-queued for retry).
+- `failed_hydration`  -  the cloud provider would not produce the bytes
   (timeouts, refusals, source vanished). Retryable.
-- `failed_copy` — destination write/read failed. Retryable.
-- `failed_hash` — copy completed but hashes mismatched. Retryable; the copy is
+- `failed_copy`  -  destination write/read failed. Retryable.
+- `failed_hash`  -  copy completed but hashes mismatched. Retryable; the copy is
   overwritten on retry, never trusted.
 
 ## Invariants

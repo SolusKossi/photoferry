@@ -19,7 +19,7 @@
   ::-webkit-scrollbar { width:10px; } ::-webkit-scrollbar-track { background:var(--ground); }
   ::-webkit-scrollbar-thumb { background:#c9c6bf; border-radius:5px; border:2px solid var(--ground); }
   ::selection { background:var(--lime); color:var(--lime-ink); }
-  body { font-family:'Söhne','Inter','Segoe UI',system-ui,sans-serif; background:var(--ground); color:var(--ink); font-size:16px; line-height:1.5; }
+  body { font-family:'Inter','Segoe UI',system-ui,sans-serif; background:var(--ground); color:var(--ink); font-size:16px; line-height:1.5; }
   a { color:var(--ink); }
   header { padding:40px 48px 8px; }
   h1 { font-size:40px; font-weight:600; letter-spacing:-.03em; line-height:1.1; }
@@ -91,14 +91,14 @@
 <body>
 <header>
   <h1>Video triage</h1>
-  <div class="sub">Your <span id="h-count">100</span> largest videos. Decide what stays in iCloud — nothing is deleted here, decisions are recorded for review.</div>
+  <div class="sub">Your <span id="h-count">100</span> largest videos. Decide what stays in iCloud  -  nothing is deleted here, decisions are recorded for review.</div>
 </header>
 <div class="statrow">
-  <div class="stat"><div class="lbl">Undecided</div><div class="val" id="s-und">–</div></div>
-  <div class="stat"><div class="lbl">Keep</div><div class="val" id="s-keep">–</div></div>
-  <div class="stat"><div class="lbl">Delete</div><div class="val" id="s-del">–</div></div>
+  <div class="stat"><div class="lbl">Undecided</div><div class="val" id="s-und">-</div></div>
+  <div class="stat"><div class="lbl">Keep</div><div class="val" id="s-keep">-</div></div>
+  <div class="stat"><div class="lbl">Delete</div><div class="val" id="s-del">-</div></div>
   <div class="stat"><div class="lbl">Space freed</div><div class="val"><span id="s-delgb">0</span> <em>GB</em></div></div>
-  <div class="stat"><div class="lbl">Watchable now</div><div class="val" id="s-play">–</div></div>
+  <div class="stat"><div class="lbl">Watchable now</div><div class="val" id="s-play">-</div></div>
 </div>
 <div class="toolbar">
   <button class="primary" onclick="startReview()">Start review</button>
@@ -112,7 +112,7 @@
     <button data-f="play" onclick="setFilter('play',this)">Watchable</button>
   </div>
 </div>
-<div class="note">Decisions save in this browser as you go. When done, <b>Export decisions</b> — the JSON file records your verdicts for whatever executes them. Generated <span id="gen-ts"></span>.</div>
+<div class="note">Decisions save in this browser as you go. When done, <b>Export decisions</b>  -  the JSON file records your verdicts for whatever executes them. Generated <span id="gen-ts"></span>.</div>
 <div id="io"><textarea id="io-text" placeholder="Exported JSON appears here. Paste JSON and import to restore."></textarea>
 <div style="padding-top:8px"><button onclick="importVerdicts()">Import from text</button></div></div>
 <main><div class="board"><table id="tbl"><thead><tr><th>File</th><th>Date</th><th>Size</th><th>Status</th><th>Verdict</th></tr></thead><tbody></tbody></table></div></main>
@@ -127,7 +127,7 @@
     <button class="rv-del" onclick="decide('delete')">Delete</button>
     <button class="rv-skip" onclick="nav(1)">Skip</button>
   </div>
-  <div class="kbd-hint"><kbd>↑</kbd> keep · <kbd>↓</kbd> delete · <kbd>←</kbd> <kbd>→</kbd> seek · <kbd>space</kbd> pause · <kbd>n</kbd>/<kbd>p</kbd> next/prev · <kbd>esc</kbd> close</div>
+  <div class="kbd-hint"><kbd>up</kbd> keep / <kbd>down</kbd> delete / <kbd>left</kbd> <kbd>right</kbd> seek / <kbd>space</kbd> pause / <kbd>n</kbd> next / <kbd>p</kbd> prev / <kbd>esc</kbd> close</div>
 </div>
 
 <script>
@@ -190,7 +190,7 @@ function importVerdicts() {
 function playableIdx() { return DATA.map((f,i)=>f.playable?i:-1).filter(i=>i>=0); }
 function startReview() {
   const p = playableIdx();
-  if (!p.length) { alert("Nothing is watchable yet — videos are still transferring to the NAS."); return; }
+  if (!p.length) { alert("Nothing is watchable yet  -  videos are still transferring to the NAS."); return; }
   const firstUnd = p.find(i => !vOf(DATA[i]));
   openReviewAt(firstUnd !== undefined ? firstUnd : p[0]);
 }
@@ -207,12 +207,12 @@ function exitReview() {
 function showCurrent() {
   const f = DATA[rvIndex]; const st = document.getElementById("rv-stage"); st.innerHTML = "";
   const v = vOf(f);
-  document.getElementById("rv-meta").textContent = `${f.filename} · ${f.date} · ${f.gb.toFixed(2)} GB`;
+  document.getElementById("rv-meta").textContent = `${f.filename} - ${f.date} - ${f.gb.toFixed(2)} GB`;
   const vd = document.getElementById("rv-verdict");
   vd.textContent = v ? "Marked " + v : ""; vd.className = v==="keep" ? "k" : v==="delete" ? "d" : "";
   document.getElementById("rv-prog").textContent = `${Object.keys(verdicts).length} of ${DATA.length} decided`;
   if (!f.playable) {
-    st.innerHTML = `<div id="rv-card">${f.filename} is still transferring — skip for now, it becomes watchable on a later visit.</div>`;
+    st.innerHTML = `<div id="rv-card">${f.filename} is still transferring  -  skip for now, it becomes watchable on a later visit.</div>`;
     return;
   }
   const vid = document.createElement("video");
