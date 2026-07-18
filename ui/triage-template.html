@@ -112,7 +112,7 @@
     <button data-f="play" onclick="setFilter('play',this)">Watchable</button>
   </div>
 </div>
-<div class="note">Decisions save in this browser as you go. When done, <b>Export decisions</b> — drop the file in <code>H:\PhotoTransfer_work\</code> or paste the text to Claude. Generated <span id="gen-ts"></span>.</div>
+<div class="note">Decisions save in this browser as you go. When done, <b>Export decisions</b> — the JSON file records your verdicts for whatever executes them. Generated <span id="gen-ts"></span>.</div>
 <div id="io"><textarea id="io-text" placeholder="Exported JSON appears here. Paste JSON and import to restore."></textarea>
 <div style="padding-top:8px"><button onclick="importVerdicts()">Import from text</button></div></div>
 <main><div class="board"><table id="tbl"><thead><tr><th>File</th><th>Date</th><th>Size</th><th>Status</th><th>Verdict</th></tr></thead><tbody></tbody></table></div></main>
@@ -218,7 +218,7 @@ function showCurrent() {
   const vid = document.createElement("video");
   vid.id = "rv-video"; vid.controls = true; vid.autoplay = true;
   vid.src = encodeURIComponent(f.filename);
-  vid.onerror = () => { st.innerHTML = `<div id="rv-card">This browser can't decode the video (likely HEVC).<br>Open it directly, then decide below.<br><code>\\\\192.168.50.144\\home\\Photos\\ios\\icloud-originals\\${f.filename}</code></div>`; };
+  vid.onerror = () => { st.innerHTML = `<div id="rv-card">This browser can't decode the video (likely HEVC).<br>Open <code>${f.filename}</code> directly from your archive folder in a media player, then decide below.</div>`; };
   st.appendChild(vid);
 }
 function decide(v) { verdicts[DATA[rvIndex].filename] = v; save(); nav(1, true); }
