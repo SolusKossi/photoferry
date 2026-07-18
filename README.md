@@ -58,6 +58,14 @@ manifest itself. Stop and restart freely.
   on large videos (exports JSON, decides nothing by itself)
 - `docs/manifest-spec.md` - the manifest format
 
+## Adapters
+
+- iCloud for Windows sync folder - the main engine (`engine\rescue.ps1`, above)
+- Snapchat Memories export - `adapters/snapchat`, see
+  [docs/snapchat.md](docs/snapchat.md)
+
+Google Takeout and Apple privacy-export ingestion are planned.
+
 ## Status
 
 Tested end to end on one 366 GB, 10,600-file library. Pre-release.
