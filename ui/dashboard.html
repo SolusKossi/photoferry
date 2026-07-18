@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PhotoFerry</title>
+<style>
+  :root {
+    --ground: #f4f2ef;
+    --card: #ffffff;
+    --ink: #171721;
+    --muted: rgba(23,23,33,.6);
+    --slate: #50617a;
+    --line: #ededf3;
+    --lime: #e0f050;
+    --brick: #c0452c;
+    --shadow: rgba(50,50,93,.25) 0 30px 45px -30px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { background: var(--ground); color: var(--ink); }
+  body {
+    font-family: 'Inter','Segoe UI',system-ui,sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+    padding: 32px 24px 64px;
+  }
+  ::selection { background: var(--lime); color: var(--ink); }
+  :focus-visible { outline: 2px solid var(--lime); outline-offset: 2px; border-radius: 4px; }
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-track { background: var(--ground); }
+  ::-webkit-scrollbar-thumb { background: #c9cdd6; border-radius: 4px; border: 2px solid var(--ground); }
+  ::-webkit-scrollbar-thumb:hover { background: var(--slate); }
+  * { scrollbar-width: thin; scrollbar-color: #c9cdd6 var(--ground); }
+
+  .wrap { max-width: 960px; margin: 0 auto; }
+
+  header { margin-bottom: 24px; }
+  h1 { font-size: 24px; font-weight: 600; letter-spacing: -0.02em; }
+  .sub { color: var(--muted); margin-top: 2px; }
+
+  .micro {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--slate);
+  }
+
+  .card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    box-shadow: var(--shadow);
+    padding: 20px;
+    margin-bottom: 20px;
+  }
+
+  .pickers { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+  .filebtn {
+    display: inline-block;
+    background: var(--ink);
+    color: #ffffff;
+    border: none;
+    border-radius: 8px;
+    padding: 8px 14px;
+    font: inherit;
+    font-weight: 600;
+    font-size: 13px;
+    cursor: pointer;
+  }
+  .filebtn:hover { background: #2c2c3a; }
+  .filebtn input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+  .drophint { color: var(--muted); font-size: 13px; }
+  .loaded { color: var(--slate); font-size: 12px; margin-top: 10px; }
+
+  body.dragging::after {
+    content: "Drop status.json or manifest.csv";
+    position: fixed;
+    inset: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(224,240,80,.9);
+    color: var(--ink);
+    font-weight: 600;
+    border: 2px dashed var(--ink);
+    border-radius: 12px;
+    pointer-events: none;
+    z-index: 10;
+  }
+
+  .hidden { display: none; }
+
+  .bignum { font-size: 28px; font-weight: 600; letter-spacing: -0.02em; }
+  .subnum { color: var(--muted); font-size: 13px; }
+
+  .track {
+    height: 8px;
+    background: var(--line);
+    border-radius: 4px;
+    overflow: hidden;
+    margin: 14px 0 16px;
+  }
+  .fill { height: 100%; width: 0%; background: var(--lime); border-radius: 4px; }
+
+  .stats { display: flex; flex-wrap: wrap; gap: 24px; }
+  .stat .v { font-size: 18px; font-weight: 600; letter-spacing: -0.01em; }
+  .stat .v.bad { color: var(--brick); }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th {
+    text-align: left;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--slate);
+    padding: 6px 12px 6px 0;
+    border-bottom: 1px solid var(--line);
+  }
+  td { padding: 7px 12px 7px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+  td.err { color: var(--muted); word-break: break-word; }
+  td.st { color: var(--brick); white-space: nowrap; }
+  .tablewrap { overflow-x: auto; }
+
+  .kv { display: grid; grid-template-columns: minmax(120px, 200px) 1fr; gap: 6px 16px; }
+  .kv .k {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--slate);
+    padding-top: 3px;
+  }
+  .kv .val { word-break: break-word; }
+
+  .badge {
+    display: inline-block;
+    border-radius: 4px;
+    padding: 1px 8px;
+    font-weight: 600;
+    font-size: 13px;
+  }
+  .badge.running { background: var(--lime); color: var(--ink); }
+  .badge.cooldown { background: rgba(80,97,122,.12); color: var(--slate); }
+  .badge.paused { background: var(--brick); color: #ffffff; }
+
+  canvas { display: block; width: 100%; height: 160px; }
+  .chartnote { color: var(--muted); font-size: 12px; margin-top: 8px; }
+
+  .cardhead { margin-bottom: 12px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <h1>PhotoFerry</h1>
+    <p class="sub">Local progress dashboard for the iCloud to NAS migration engine. Nothing leaves this machine.</p>
+  </header>
+
+  <section class="card">
+    <div class="micro cardhead">Load data</div>
+    <div class="pickers">
+      <label class="filebtn">status.json
+        <input type="file" id="pickStatus" accept=".json,application/json">
+      </label>
+      <label class="filebtn">manifest.csv
+        <input type="file" id="pickManifest" accept=".csv,text/csv">
+      </label>
+      <span class="drophint">or drop either file anywhere on this page. Re-dropping refreshes.</span>
+    </div>
+    <div class="loaded" id="loadedLine">No files loaded.</div>
+  </section>
+
+  <section class="card hidden" id="statusCard">
+    <div class="micro cardhead">Engine state</div>
+    <div class="kv" id="statusKv"></div>
+  </section>
+
+  <section class="card hidden" id="progressCard">
+    <div class="micro cardhead">Progress</div>
+    <div class="bignum" id="progHead"></div>
+    <div class="subnum" id="progSub"></div>
+    <div class="track"><div class="fill" id="progFill"></div></div>
+    <div class="stats" id="statusCounts"></div>
+  </section>
+
+  <section class="card hidden" id="chartCard">
+    <div class="micro cardhead">Verified files per hour</div>
+    <canvas id="chart" height="160"></canvas>
+    <div class="chartnote" id="chartNote"></div>
+  </section>
+
+  <section class="card hidden" id="failCard">
+    <div class="micro cardhead">Failures</div>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Filename</th><th>Status</th><th>Last error</th></tr></thead>
+        <tbody id="failBody"></tbody>
+      </table>
+    </div>
+  </section>
+
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var manifestName = null;
+  var statusName = null;
+  var manifestRows = null; /* array of objects keyed by header */
+
+  function $(id) { return document.getElementById(id); }
+
+  /* ---------- CSV parsing (handles quoted fields with commas) ---------- */
+
+  function parseCsv(text) {
+    var rows = [];
+    var row = [];
+    var field = "";
+    var inQuotes = false;
+    var i = 0, n = text.length;
+    while (i < n) {
+      var c = text.charAt(i);
+      if (inQuotes) {
+        if (c === '"') {
+          if (i + 1 < n && text.charAt(i + 1) === '"') { field += '"'; i += 2; continue; }
+          inQuotes = false; i++; continue;
+        }
+        field += c; i++; continue;
+      }
+      if (c === '"') { inQuotes = true; i++; continue; }
+      if (c === ",") { row.push(field); field = ""; i++; continue; }
+      if (c === "\r") { i++; continue; }
+      if (c === "\n") { row.push(field); rows.push(row); row = []; field = ""; i++; continue; }
+      field += c; i++;
+    }
+    if (field.length > 0 || row.length > 0) { row.push(field); rows.push(row); }
+    /* drop trailing fully-empty rows */
+    while (rows.length && rows[rows.length - 1].length === 1 && rows[rows.length - 1][0] === "") {
+      rows.pop();
+    }
+    return rows;
+  }
+
+  function toObjects(rows) {
+    if (rows.length < 1) return [];
+    var header = rows[0].map(function (h) { return h.trim().toLowerCase(); });
+    var out = [];
+    for (var r = 1; r < rows.length; r++) {
+      var obj = {};
+      for (var c = 0; c < header.length; c++) {
+        obj[header[c]] = rows[r][c] !== undefined ? rows[r][c] : "";
+      }
+      out.push(obj);
+    }
+    return out;
+  }
+
+  /* ---------- Formatting ---------- */
+
+  function fmtInt(v) {
+    var s = String(Math.round(v));
+    return s.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  }
+
+  function fmtGb(bytes) {
+    return (bytes / 1e9).toFixed(1) + " GB";
+  }
+
+  /* ---------- Manifest rendering ---------- */
+
+  function renderManifest(rowObjs) {
+    var total = rowObjs.length;
+    var counts = {};
+    var verifiedBytes = 0;
+    var i;
+    for (i = 0; i < total; i++) {
+      var st = (rowObjs[i].status || "").trim() || "(blank)";
+      counts[st] = (counts[st] || 0) + 1;
+      if (st === "verified") {
+        var b = parseFloat(rowObjs[i].bytes);
+        if (!isNaN(b)) verifiedBytes += b;
+      }
+    }
+    var verified = counts["verified"] || 0;
+    var pct = total > 0 ? (verified / total * 100) : 0;
+
+    $("progHead").textContent = fmtInt(verified) + " of " + fmtInt(total) + " files verified";
+    $("progSub").textContent = fmtGb(verifiedBytes) + " verified (" + pct.toFixed(1) + "%)";
+    $("progFill").style.width = pct.toFixed(2) + "%";
+
+    /* counts by status: verified, pending, then failed_* and anything else */
+    var order = Object.keys(counts).sort(function (a, b) {
+      function rank(k) {
+        if (k === "verified") return 0;
+        if (k === "pending") return 1;
+        if (k.indexOf("failed") === 0) return 2;
+        return 3;
+      }
+      var d = rank(a) - rank(b);
+      return d !== 0 ? d : (a < b ? -1 : 1);
+    });
+    var sc = $("statusCounts");
+    sc.textContent = "";
+    order.forEach(function (k) {
+      var div = document.createElement("div");
+      div.className = "stat";
+      var lab = document.createElement("div");
+      lab.className = "micro";
+      lab.textContent = k;
+      var val = document.createElement("div");
+      val.className = "v" + (k.indexOf("failed") === 0 ? " bad" : "");
+      val.textContent = fmtInt(counts[k]);
+      div.appendChild(lab);
+      div.appendChild(val);
+      sc.appendChild(div);
+    });
+
+    $("progressCard").classList.remove("hidden");
+
+    renderFailures(rowObjs);
+    renderChart(rowObjs);
+  }
+
+  function renderFailures(rowObjs) {
+    var fails = rowObjs.filter(function (r) {
+      return (r.status || "").indexOf("failed") === 0;
+    });
+    var card = $("failCard");
+    var body = $("failBody");
+    body.textContent = "";
+    if (fails.length === 0) { card.classList.add("hidden"); return; }
+    fails.forEach(function (r) {
+      var tr = document.createElement("tr");
+      var tdName = document.createElement("td");
+      tdName.textContent = r.filename || r.file || r.name || "";
+      var tdStatus = document.createElement("td");
+      tdStatus.className = "st";
+      tdStatus.textContent = r.status || "";
+      var tdErr = document.createElement("td");
+      tdErr.className = "err";
+      tdErr.textContent = r.last_error || "";
+      tr.appendChild(tdName);
+      tr.appendChild(tdStatus);
+      tr.appendChild(tdErr);
+      body.appendChild(tr);
+    });
+    card.classList.remove("hidden");
+  }
+
+  /* ---------- Activity chart ---------- */
+
+  function renderChart(rowObjs) {
+    var card = $("chartCard");
+    var stamps = [];
+    rowObjs.forEach(function (r) {
+      if ((r.status || "") !== "verified") return;
+      var raw = (r.completed_at || "").trim();
+      if (!raw) return;
+      var t = Date.parse(raw);
+      if (!isNaN(t)) stamps.push(t);
+    });
+    if (stamps.length === 0) { card.classList.add("hidden"); return; }
+
+    var HOUR = 3600000;
+    var minH = Infinity, maxH = -Infinity;
+    var buckets = {};
+    stamps.forEach(function (t) {
+      var h = Math.floor(t / HOUR);
+      buckets[h] = (buckets[h] || 0) + 1;
+      if (h < minH) minH = h;
+      if (h > maxH) maxH = h;
+    });
+    var nBuckets = maxH - minH + 1;
+    var series = [];
+    var peak = 0;
+    for (var h = minH; h <= maxH; h++) {
+      var v = buckets[h] || 0;
+      series.push(v);
+      if (v > peak) peak = v;
+    }
+
+    var canvas = $("chart");
+    card.classList.remove("hidden");
+    var cssW = canvas.clientWidth || canvas.parentNode.clientWidth || 900;
+    var cssH = 160;
+    var dpr = window.devicePixelRatio || 1;
+    canvas.width = Math.round(cssW * dpr);
+    canvas.height = Math.round(cssH * dpr);
+    canvas.style.height = cssH + "px";
+    var ctx = canvas.getContext("2d");
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, cssW, cssH);
+
+    var padTop = 14, padBottom = 4;
+    var plotH = cssH - padTop - padBottom;
+    var gap = nBuckets > 120 ? 0 : 1;
+    var barW = Math.max(1, (cssW - gap * (nBuckets - 1)) / nBuckets);
+
+    ctx.fillStyle = "#50617a";
+    for (var i = 0; i < nBuckets; i++) {
+      if (series[i] === 0) continue;
+      var bh = Math.max(1, series[i] / peak * plotH);
+      var x = i * (barW + gap);
+      ctx.fillRect(x, padTop + (plotH - bh), barW, bh);
+    }
+
+    /* baseline */
+    ctx.fillStyle = "#ededf3";
+    ctx.fillRect(0, cssH - padBottom, cssW, 1);
+
+    /* peak label */
+    ctx.fillStyle = "rgba(23,23,33,.6)";
+    ctx.font = "10px 'Inter','Segoe UI',system-ui,sans-serif";
+    ctx.textBaseline = "top";
+    ctx.fillText("peak " + fmtInt(peak) + "/h", 0, 0);
+
+    function stamp(hourIndex) {
+      var d = new Date(hourIndex * HOUR);
+      function p(x) { return (x < 10 ? "0" : "") + x; }
+      return d.getFullYear() + "-" + p(d.getMonth() + 1) + "-" + p(d.getDate()) +
+        " " + p(d.getHours()) + ":00";
+    }
+    $("chartNote").textContent = stamp(minH) + " to " + stamp(maxH + 1) + ", " +
+      fmtInt(stamps.length) + " files across " + fmtInt(nBuckets) + " hours";
+  }
+
+  /* ---------- Status rendering ---------- */
+
+  function renderStatus(obj) {
+    var kv = $("statusKv");
+    kv.textContent = "";
+    var keys = Object.keys(obj);
+    /* show state, stage, batch first, then the rest in file order */
+    var first = ["state", "stage", "batch"];
+    var ordered = [];
+    first.forEach(function (k) { if (k in obj) ordered.push(k); });
+    keys.forEach(function (k) { if (first.indexOf(k) === -1) ordered.push(k); });
+
+    ordered.forEach(function (k) {
+      var kEl = document.createElement("div");
+      kEl.className = "k";
+      kEl.textContent = k;
+      var vEl = document.createElement("div");
+      vEl.className = "val";
+      var v = obj[k];
+      var text = (v !== null && typeof v === "object") ? JSON.stringify(v) : String(v);
+      if (k === "state") {
+        var badge = document.createElement("span");
+        badge.className = "badge";
+        var s = text.toLowerCase();
+        if (s === "running") badge.className += " running";
+        else if (s === "cooldown") badge.className += " cooldown";
+        else if (s === "paused") badge.className += " paused";
+        badge.textContent = text;
+        vEl.appendChild(badge);
+      } else {
+        vEl.textContent = text;
+      }
+      kv.appendChild(kEl);
+      kv.appendChild(vEl);
+    });
+    $("statusCard").classList.remove("hidden");
+  }
+
+  /* ---------- File intake ---------- */
+
+  function updateLoadedLine() {
+    var parts = [];
+    if (statusName) parts.push(statusName);
+    if (manifestName) parts.push(manifestName);
+    $("loadedLine").textContent = parts.length
+      ? "Loaded: " + parts.join(", ")
+      : "No files loaded.";
+  }
+
+  function handleText(name, text) {
+    var lower = name.toLowerCase();
+    var looksJson = /\.json$/.test(lower) ||
+      (!/\.csv$/.test(lower) && /^\s*[\[{]/.test(text));
+    if (looksJson) {
+      var obj;
+      try { obj = JSON.parse(text); } catch (e) {
+        $("loadedLine").textContent = "Could not parse " + name + " as JSON.";
+        return;
+      }
+      statusName = name;
+      renderStatus(obj);
+    } else {
+      var rows = toObjects(parseCsv(text));
+      manifestName = name;
+      manifestRows = rows;
+      renderManifest(rows);
+    }
+    updateLoadedLine();
+  }
+
+  function readFile(file) {
+    var reader = new FileReader();
+    reader.onload = function () { handleText(file.name, String(reader.result)); };
+    reader.readAsText(file);
+  }
+
+  function readFiles(list) {
+    for (var i = 0; i < list.length; i++) readFile(list[i]);
+  }
+
+  $("pickStatus").addEventListener("change", function (e) {
+    if (e.target.files.length) readFiles(e.target.files);
+    e.target.value = "";
+  });
+  $("pickManifest").addEventListener("change", function (e) {
+    if (e.target.files.length) readFiles(e.target.files);
+    e.target.value = "";
+  });
+
+  var dragDepth = 0;
+  window.addEventListener("dragenter", function (e) {
+    e.preventDefault();
+    dragDepth++;
+    document.body.classList.add("dragging");
+  });
+  window.addEventListener("dragover", function (e) { e.preventDefault(); });
+  window.addEventListener("dragleave", function (e) {
+    e.preventDefault();
+    dragDepth--;
+    if (dragDepth <= 0) { dragDepth = 0; document.body.classList.remove("dragging"); }
+  });
+  window.addEventListener("drop", function (e) {
+    e.preventDefault();
+    dragDepth = 0;
+    document.body.classList.remove("dragging");
+    if (e.dataTransfer && e.dataTransfer.files.length) readFiles(e.dataTransfer.files);
+  });
+
+  window.addEventListener("resize", function () {
+    if (manifestRows) renderChart(manifestRows);
+  });
+})();
+</script>
+</body>
+</html>
