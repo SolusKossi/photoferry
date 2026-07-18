@@ -3,7 +3,7 @@
 Observed July 2026, iCloud for Windows on Windows 11, one library:
 10,619 files / ~366 GB logical (93% of bytes in 454 camera videos). These are
 empirical observations, not documentation of Apple internals; treat them as a
-map of the minefield, not the mine schematics.
+empirical observations only.
 
 ## The placeholder trap
 
